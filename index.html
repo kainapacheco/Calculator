@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#000000">
+
+    <title>Calculator</title>
+
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Calculator_icon_iOS.svg/1024px-Calculator_icon_iOS.svg.png">
+
+    <style>
+        /* RESET E PREVENÇÃO DE COMPORTAMENTOS DO NAVEGADOR */
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation; /* Melhora a resposta do toque */
+        }
+        
+        body {
+            margin: 0; 
+            padding: 0;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-end;
+            height: 100vh; 
+            height: -webkit-fill-available; /* Correção para altura no iOS Safari */
+            overflow: hidden;
+            overscroll-behavior-y: none; /* Impede o efeito elástico ao tentar rolar a página */
+            user-select: none; /* Impede seleção de texto */
+            -webkit-user-select: none;
+            /* Respeita a área do Notch (Recorte) do iPhone */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Container Principal */
+        .calculator {
+            width: 100%; 
+            max-width: 420px;
+            height: 100%;
+            display: flex; 
+            flex-direction: column;
+            padding-bottom: 20px;
+        }
+
+        /* Display */
+        .display-container {
+            flex: 1;
+            display: flex; 
+            justify-content: flex-end; 
+            align-items: flex-end;
+            padding: 20px;
+            padding-bottom: 10px;
+        }
+        #display {
+            color: #fff;
+            font-size: 85px;
+            font-weight: 300;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: font-size 0.1s;
+            pointer-events: none; /* Impede interação direta com o texto */
+        }
+
+        /* Grid de Botões */
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px; /* Espaçamento entre botões */
+            padding: 15px;
+        }
+
+        button {
+            border: none; 
+            outline: none;
+            font-size: 32px;
+            height: 80px; 
+            width: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            transition: filter 0.2s;
+            /* Garante que pareça um botão nativo */
+            -webkit-appearance: none;
+            position: relative;
+        }
+        
+        button:active { 
+            filter: brightness(130%); 
+        }
+
+        /* Estilos Específicos (Cores iOS) */
+        .btn-gray { background-color: #a5a5a5; color: #000; font-weight: 400; } /* AC, +/-, % */
+        .btn-dark { background-color: #333333; color: #fff; } /* Números */
+        .btn-orange { background-color: #ff9f0a; color: #fff; font-size: 40px; padding-bottom: 4px; } /* Operações */
+        
+        /* Botão Zero Largo */
+        .btn-zero {
+            grid-column: span 2;
+            width: 100%;
+            border-radius: 40px;
+            justify-content: flex-start;
+            padding-left: 30px;
+        }
+
+        /* Painel Admin (Escondido) */
+        #admin-panel {
+            display: none;
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: #000;
+            color: #fff;
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        #admin-panel h2 { margin-bottom: 30px; font-weight: 500; font-size: 24px; text-align: center; }
+        .input-group { margin-bottom: 25px; width: 100%; max-width: 300px; }
+        .input-group label { display: block; margin-bottom: 10px; color: #a5a5a5; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .input-group input {
+            width: 100%; padding: 15px;
+            background: #1c1c1e; border: 1px solid #333; border-radius: 10px;
+            color: #fff; font-size: 22px; text-align: center;
+            -webkit-appearance: none; /* Remove estilos padrão do input no iOS */
+        }
+        #save-btn {
+            background: #30d158; color: #fff;
+            padding: 15px 0; border-radius: 12px;
+            font-weight: 600; font-size: 18px; margin-top: 10px;
+            width: 100%; max-width: 300px; height: auto;
+        }
+
+        /* Ajustes Responsivos Extremos para telas pequenas (iPhone SE, etc) */
+        @media (max-width: 380px) {
+            button { height: 70px; width: 70px; font-size: 28px; }
+            .buttons { gap: 10px; padding: 10px; }
+            #display { font-size: 70px; }
+        }
+        /* Ajustes para telas muito altas */
+        @media (min-height: 800px) {
+            .calculator { justify-content: flex-end; }
+            .display-container { padding-bottom: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator" id="calc-interface">
+        <div class="display-container">
+            <span id="display">0</span>
+        </div>
+        <div class="buttons">
+            <button class="btn-gray" id="btn-ac" onclick="handleInput('AC')">AC</button>
+            <button class="btn-gray" onclick="handleInput('neg')">+/-</button>
+            <button class="btn-gray" onclick="handleInput('%')">%</button>
+            <button class="btn-orange" onclick="handleInput('/')">÷</button>
+            
+            <button class="btn-dark" onclick="handleInput('7')">7</button>
+            <button class="btn-dark" onclick="handleInput('8')">8</button>
+            <button class="btn-dark" onclick="handleInput('9')">9</button>
+            <button class="btn-orange" onclick="handleInput('*')">×</button>
+            
+            <button class="btn-dark" onclick="handleInput('4')">4</button>
+            <button class="btn-dark" onclick="handleInput('5')">5</button>
+            <button class="btn-dark" onclick="handleInput('6')">6</button>
+            <button class="btn-orange" onclick="handleInput('-')">−</button>
+            
+            <button class="btn-dark" onclick="handleInput('1')">1</button>
+            <button class="btn-dark" onclick="handleInput('2')">2</button>
+            <button class="btn-dark" onclick="handleInput('3')">3</button>
+            <button class="btn-orange" onclick="handleInput('+')">+</button>
+            
+            <button class="btn-dark btn-zero" onclick="handleInput('0')">0</button>
+            <button class="btn-dark" onclick="handleInput('.')">,</button>
+            <button class="btn-orange" onclick="handleInput('=')">=</button>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <div style="text-align: right; width: 100%; margin-bottom: 20px;">
+            <button onclick="closeAdmin()" style="background: none; color: #ff9f0a; font-size: 16px; width: auto; height: auto;">Cancelar</button>
+        </div>
+        <h2>⚙️ Configuração Mágica</h2>
+        <div class="input-group">
+            <label>Número Alvo (Resultado)</label>
+            <input type="tel" id="target-input" placeholder="Ex: 5000">
+        </div>
+        <div class="input-group">
+            <label>Cliques para Ativar</label>
+            <input type="tel" id="clicks-input" placeholder="Ex: 10">
+        </div>
+        <button id="save-btn" onclick="saveConfig()">Salvar Configuração</button>
+        <p style="color: #555; font-size: 12px; margin-top: 30px; text-align: center;">Dica: Salve o site na tela inicial<br>para funcionar como app.</p>
+    </div>
+
+    <script>
+        // --- ESTADO GERAL ---
+        let displayValue = '0';
+        let firstOperand = null;
+        let waitingForSecondOperand = false;
+        let operator = null;
+        let clickCount = 0;
+        
+        // --- ESTADO MÁGICO ---
+        let magicConfig = {
+            target: 5000,
+            triggerClicks: 15
+        };
+        
+        let magicModeActive = false;
+        let forceNumberString = ""; 
+        let forceIndex = 0; 
+        
+        // Carregar config salva
+        if(localStorage.getItem('magicCalcConfig')) {
+            magicConfig = JSON.parse(localStorage.getItem('magicCalcConfig'));
+        }
+
+        const display = document.getElementById('display');
+        const acBtn = document.getElementById('btn-ac');
+
+        function updateDisplay() {
+            // Formatação br (vírgula) e ajuste de tamanho
+            let formatted = displayValue.replace('.', ',');
+            
+            // Lógica de resize similar ao iOS
+            if (formatted.length > 6) display.style.fontSize = '60px';
+            else if (formatted.length > 9) display.style.fontSize = '40px';
+            else display.style.fontSize = '85px';
+            
+            display.innerText = formatted;
+            
+            if(displayValue !== '0' && displayValue !== '') {
+                acBtn.innerText = 'C';
+            } else {
+                acBtn.innerText = 'AC';
+            }
+        }
+
+        function handleInput(input) {
+            // Previne zoom duplo toque e comportamentos estranhos
+            if (event) event.preventDefault();
+
+            // === GATILHO ADMIN (SENHA 12345678) ===
+            if (input === '=' && displayValue === '12345678') {
+                openAdmin();
+                return;
+            }
+
+            clickCount++;
+            // Debug silencioso no console
+            // console.log(`Cliques: ${clickCount} | Trigger em: ${magicConfig.triggerClicks}`);
+
+            // === GATILHO MÁGICO ===
+            // Se passou dos cliques E temos uma operação pendente
+            if (clickCount > magicConfig.triggerClicks && operator !== null && !magicModeActive) {
+                magicModeActive = true;
+                calculateForceNumber();
+            }
+
+            if (magicModeActive) {
+                handleMagicInput(input);
+            } else {
+                handleNormalInput(input);
+            }
+        }
+
+        // --- LÓGICA NORMAL ---
+        function handleNormalInput(input) {
+            if (!isNaN(input)) { 
+                if (waitingForSecondOperand) {
+                    displayValue = input;
+                    waitingForSecondOperand = false;
+                } else {
+                    displayValue = displayValue === '0' ? input : displayValue + input;
+                }
+            } else if (input === '.') {
+                if (!displayValue.includes('.')) {
+                    displayValue += '.';
+                }
+            } else if (input === 'AC') {
+                displayValue = '0';
+                firstOperand = null;
+                waitingForSecondOperand = false;
+                operator = null;
+                // NOTA: Não resetamos clickCount aqui para proteger o truque
+            } else if (input === 'neg') {
+                displayValue = (parseFloat(displayValue) * -1).toString();
+            } else if (input === '%') {
+                displayValue = (parseFloat(displayValue) / 100).toString();
+            } else if (input === '=') {
+                if (operator && firstOperand !== null) {
+                    const result = performCalculation(operator, firstOperand, parseFloat(displayValue));
+                    displayValue = String(result);
+                    firstOperand = null;
+                    operator = null;
+                    waitingForSecondOperand = false;
+                }
+            } else {
+                // Operadores
+                if (operator && !waitingForSecondOperand) {
+                    const result = performCalculation(operator, firstOperand, parseFloat(displayValue));
+                    displayValue = String(result);
+                    firstOperand = result;
+                } else {
+                    firstOperand = parseFloat(displayValue);
+                }
+                waitingForSecondOperand = true;
+                operator = input;
+            }
+            updateDisplay();
+        }
+
+        // --- LÓGICA MÁGICA ---
+        function calculateForceNumber() {
+            let current = firstOperand; 
+            let target = parseFloat(magicConfig.target);
+            let needed = 0;
+
+            if (operator === '+') {
+                needed = target - current;
+            } else if (operator === '-') {
+                needed = current - target;
+            } else if (operator === '*') {
+                needed = target / current;
+            } else if (operator === '/') {
+                needed = current / target;
+            }
+
+            // Tratamento para números inteiros ou decimais limpos
+            if (Number.isInteger(needed)) {
+                forceNumberString = Math.abs(needed).toString();
+            } else {
+                forceNumberString = Math.abs(needed).toFixed(2).replace('.00', '');
+            }
+            
+            forceIndex = 0;
+        }
+
+        function handleMagicInput(input) {
+            // Se apertar IGUAL, termina a mágica
+            if (input === '=') {
+                displayValue = magicConfig.target.toString();
+                finishMagic();
+                return;
+            }
+
+            if (forceIndex < forceNumberString.length) {
+                let nextDigit = forceNumberString[forceIndex];
+                
+                if (waitingForSecondOperand || displayValue === '0') {
+                    displayValue = nextDigit;
+                    waitingForSecondOperand = false;
+                } else {
+                    displayValue += nextDigit;
+                }
+                
+                // Pisca o AC se tocar nele, para dar realismo
+                if(input === 'AC') {
+                    acBtn.style.opacity = '0.5';
+                    setTimeout(() => acBtn.style.opacity = '1', 100);
+                }
+
+                forceIndex++;
+                updateDisplay();
+
+            } else {
+                // Se o espectador continuar digitando além do necessário
+                displayValue = magicConfig.target.toString();
+                finishMagic();
+            }
+        }
+
+        function finishMagic() {
+            updateDisplay();
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            magicModeActive = false;
+            clickCount = 0; 
+        }
+
+        function performCalculation(op, a, b) {
+            if (op === '+') return a + b;
+            if (op === '-') return a - b;
+            if (op === '*') return a * b;
+            if (op === '/') return a / b;
+            return b;
+        }
+
+        // --- ADMIN SYSTEM ---
+        const adminPanel = document.getElementById('admin-panel');
+        const calcInterface = document.getElementById('calc-interface');
+
+        function openAdmin() {
+            adminPanel.style.display = 'flex';
+            calcInterface.style.display = 'none'; // Esconde a calc para economizar render
+            document.getElementById('target-input').value = magicConfig.target;
+            document.getElementById('clicks-input').value = magicConfig.triggerClicks;
+        }
+        
+        function closeAdmin() {
+            adminPanel.style.display = 'none';
+            calcInterface.style.display = 'flex';
+            // Reseta display para não ficar mostrando a senha
+            displayValue = '0';
+            updateDisplay();
+        }
+
+        function saveConfig() {
+            const t = parseFloat(document.getElementById('target-input').value);
+            const c = parseInt(document.getElementById('clicks-input').value);
+            
+            if (!isNaN(t) && !isNaN(c)) {
+                magicConfig.target = t;
+                magicConfig.triggerClicks = c;
+                localStorage.setItem('magicCalcConfig', JSON.stringify(magicConfig));
+                closeAdmin();
+            } else {
+                alert("Por favor, insira apenas números válidos.");
+            }
+        }
+    </script>
+</body>
+</html>
