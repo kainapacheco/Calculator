@@ -10,53 +10,61 @@
 
     <title>Calculator</title>
 
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Calculator_icon_iOS.svg/1024px-Calculator_icon_iOS.svg.png">
+    <link rel="apple-touch-icon" href="https://cdn.iconscout.com/icon/free/png-256/free-calculadora-icon-svg-download-png-1575939.png">
 
     <style>
         /* RESET E PREVENÇÃO DE COMPORTAMENTOS DO NAVEGADOR */
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
-            touch-action: manipulation; /* Melhora a resposta do toque */
+            touch-action: manipulation;
         }
         
-        html, body {
+        html {
+            height: 100%;
+            background-color: #000;
+        }
+
+        body {
             margin: 0; 
             padding: 0;
             background-color: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* Configuração crucial para alinhar ao fundo */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Empurra tudo para baixo */
             height: 100vh;
-            height: -webkit-fill-available;
+            height: -webkit-fill-available; /* Correção para iOS */
             width: 100%;
             overflow: hidden;
-            overscroll-behavior-y: none; /* Impede o efeito elástico ao tentar rolar a página */
-            user-select: none; /* Impede seleção de texto */
+            overscroll-behavior-y: none;
+            user-select: none;
             -webkit-user-select: none;
         }
 
-        /* Container Principal */
+        /* Container Principal da Calculadora */
         .calculator {
             width: 100%; 
-            height: 100vh;
-            height: -webkit-fill-available;
             display: flex; 
             flex-direction: column;
-            /* Alinha tudo na parte inferior */
-            justify-content: flex-end;
-            /* Respeita a área do Notch (Recorte) do iPhone */
+            /* Respeita a área do Notch inferior do iPhone */
             padding-bottom: env(safe-area-inset-bottom);
             margin: 0 auto;
         }
 
         /* Display */
         .display-container {
-            /* O display preenche o espaço que sobrar acima dos botões */
-            flex-grow: 1;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
             display: flex; 
             justify-content: flex-end; 
             align-items: flex-end;
             padding: 20px;
             padding-bottom: 10px;
+            /* Garante espaço no topo em telas muito altas */
+            padding-top: 60px; 
         }
         #display {
             color: #fff;
@@ -66,16 +74,15 @@
             white-space: nowrap;
             overflow: hidden;
             transition: font-size 0.1s;
-            pointer-events: none; /* Impede interação direta com o texto */
+            pointer-events: none;
         }
 
         /* Grid de Botões */
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px; /* Espaçamento entre botões */
+            gap: 12px;
             padding: 15px;
-            /* Limita a largura em telas muito grandes */
             max-width: 420px;
             margin: 0 auto;
             width: 100%;
@@ -85,7 +92,6 @@
             border: none; 
             outline: none;
             font-size: 32px;
-            /* Tamanho fixo para botões para consistência */
             height: 80px; 
             width: 80px;
             border-radius: 50%;
@@ -94,9 +100,9 @@
             justify-content: center; 
             align-items: center;
             transition: filter 0.2s;
-            /* Garante que pareça um botão nativo */
             -webkit-appearance: none;
             position: relative;
+            background-color: #333333; /* Cor padrão de fundo para evitar flashes */
         }
         
         button:active { 
@@ -104,9 +110,9 @@
         }
 
         /* Estilos Específicos (Cores iOS) */
-        .btn-gray { background-color: #a5a5a5; color: #000; font-weight: 400; } /* AC, +/-, % */
-        .btn-dark { background-color: #333333; color: #fff; } /* Números */
-        .btn-orange { background-color: #ff9f0a; color: #fff; font-size: 40px; padding-bottom: 4px; } /* Operações */
+        .btn-gray { background-color: #a5a5a5; color: #000; font-weight: 400; }
+        .btn-dark { background-color: #333333; color: #fff; }
+        .btn-orange { background-color: #ff9f0a; color: #fff; font-size: 40px; padding-bottom: 4px; }
         
         /* Botão Zero Largo */
         .btn-zero {
@@ -130,6 +136,7 @@
             justify-content: center;
             z-index: 9999;
             padding: 20px;
+            padding-top: env(safe-area-inset-top); /* Respeita o notch superior no admin */
         }
         #admin-panel h2 { margin-bottom: 30px; font-weight: 500; font-size: 24px; text-align: center; }
         .input-group { margin-bottom: 25px; width: 100%; max-width: 300px; }
@@ -138,7 +145,7 @@
             width: 100%; padding: 15px;
             background: #1c1c1e; border: 1px solid #333; border-radius: 10px;
             color: #fff; font-size: 22px; text-align: center;
-            -webkit-appearance: none; /* Remove estilos padrão do input no iOS */
+            -webkit-appearance: none;
         }
         #save-btn {
             background: #30d158; color: #fff;
@@ -147,7 +154,7 @@
             width: 100%; max-width: 300px; height: auto;
         }
 
-        /* Ajustes Responsivos Extremos para telas pequenas (iPhone SE, etc) */
+        /* Ajustes Responsivos para telas pequenas */
         @media (max-width: 380px) {
             button { height: 70px; width: 70px; font-size: 28px; }
             .buttons { gap: 10px; padding: 10px; }
@@ -189,7 +196,7 @@
     </div>
 
     <div id="admin-panel">
-        <div style="text-align: right; width: 100%; margin-bottom: 20px;">
+        <div style="text-align: right; width: 100%; margin-bottom: 20px; max-width: 300px;">
             <button onclick="closeAdmin()" style="background: none; color: #ff9f0a; font-size: 16px; width: auto; height: auto; -webkit-appearance: none;">Cancelar</button>
         </div>
         <h2>⚙️ Configuração Mágica</h2>
@@ -250,7 +257,7 @@
         }
 
         function handleInput(input) {
-            // Previne zoom duplo toque e comportamentos estranhos
+            // Previne comportamentos estranhos de toque
             if (event) event.preventDefault();
 
             // === GATILHO ADMIN (SENHA 12345678) ===
@@ -260,8 +267,6 @@
             }
 
             clickCount++;
-            // Debug silencioso no console
-            // console.log(`Cliques: ${clickCount} | Trigger em: ${magicConfig.triggerClicks}`);
 
             // === GATILHO MÁGICO ===
             // Se passou dos cliques E temos uma operação pendente
@@ -339,7 +344,6 @@
                 needed = current / target;
             }
 
-            // Tratamento para números inteiros ou decimais limpos
             if (Number.isInteger(needed)) {
                 forceNumberString = Math.abs(needed).toString();
             } else {
@@ -350,7 +354,6 @@
         }
 
         function handleMagicInput(input) {
-            // Se apertar IGUAL, termina a mágica
             if (input === '=') {
                 displayValue = magicConfig.target.toString();
                 finishMagic();
@@ -367,7 +370,6 @@
                     displayValue += nextDigit;
                 }
                 
-                // Pisca o AC se tocar nele, para dar realismo
                 if(input === 'AC') {
                     acBtn.style.opacity = '0.5';
                     setTimeout(() => acBtn.style.opacity = '1', 100);
@@ -377,7 +379,6 @@
                 updateDisplay();
 
             } else {
-                // Se o espectador continuar digitando além do necessário
                 displayValue = magicConfig.target.toString();
                 finishMagic();
             }
@@ -406,7 +407,7 @@
 
         function openAdmin() {
             adminPanel.style.display = 'flex';
-            calcInterface.style.display = 'none'; // Esconde a calc para economizar render
+            calcInterface.style.display = 'none';
             document.getElementById('target-input').value = magicConfig.target;
             document.getElementById('clicks-input').value = magicConfig.triggerClicks;
         }
@@ -414,7 +415,6 @@
         function closeAdmin() {
             adminPanel.style.display = 'none';
             calcInterface.style.display = 'flex';
-            // Reseta display para não ficar mostrando a senha
             displayValue = '0';
             updateDisplay();
         }
